@@ -10,8 +10,12 @@ import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.realm.AuthorizingRealm;
+import org.apache.shiro.session.Session;
+import org.apache.shiro.session.mgt.SessionManager;
+import org.apache.shiro.session.mgt.eis.SessionDAO;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.Subject;
+import org.apache.shiro.subject.support.DefaultSubjectContext;
 import org.apache.shiro.util.ByteSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -24,6 +28,12 @@ public class UserRealm extends AuthorizingRealm {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private SessionDAO sessionDAO;
+
+    @Autowired
+    private SessionManager sessionManager;
+
     /**
      * 授权
      **/
@@ -32,18 +42,18 @@ public class UserRealm extends AuthorizingRealm {
         System.out.println("执行授权");
 
         Subject subject = SecurityUtils.getSubject();
-        UserBean user = (UserBean)subject.getPrincipal();
-        if(user != null){
+        UserBean user = (UserBean) subject.getPrincipal();
+        if (user != null) {
             SimpleAuthorizationInfo info = new SimpleAuthorizationInfo();
             // 角色与权限字符串集合
             Collection<String> rolesCollection = new HashSet<>();
             Collection<String> premissionCollection = new HashSet<>();
 
             Set<RoleBean> roles = user.getRole();
-            for(RoleBean role : roles){
+            for (RoleBean role : roles) {
                 rolesCollection.add(role.getName());
                 Set<PermissionBean> permissions = role.getPermissions();
-                for (PermissionBean permission : permissions){
+                for (PermissionBean permission : permissions) {
                     premissionCollection.add(permission.getUrl());
                 }
                 info.addStringPermissions(premissionCollection);
@@ -62,10 +72,11 @@ public class UserRealm extends AuthorizingRealm {
 
         System.out.println("执行认证");
 
-        UsernamePasswordToken token = (UsernamePasswordToken)authenticationToken;
+
+        UsernamePasswordToken token = (UsernamePasswordToken) authenticationToken;
         UserBean bean = userService.findByName(token.getUsername());
 
-        if(bean == null){
+        if (bean == null) {
             throw new UnknownAccountException();
         }
 
@@ -75,7 +86,7 @@ public class UserRealm extends AuthorizingRealm {
                 credentialsSalt, getName());
     }
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
         String hashAlgorithName = "MD5";
         String password = "123456";
         //加密次数
